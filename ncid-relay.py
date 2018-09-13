@@ -29,7 +29,7 @@ def incoming_call(client, topic, _date, _time, _line, _nmbr, _mesg, _name):
             "mesg": _mesg,
             "name": _name,
             }
-    d = datetime.datetime(int(_date[4:8]), int(_date[2:4]), int(_date[0:2]),
+    d = datetime.datetime(int(_date[4:8]), int(_date[0:2]), int(_date[2:4]),
                         int(_time[0:2]), int(_time[2:4]))
     now = datetime.datetime.now()
     print(data)
