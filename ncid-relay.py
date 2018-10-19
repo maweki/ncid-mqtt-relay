@@ -7,10 +7,10 @@ import paho.mqtt.client as mqtt
 import json
 import datetime
 
-def parse_server(ip_string, default_port):
+def parse_optional(ip_string, default_port, cast=(lambda x: x)):
     ip, _, port = ip_string.partition(':')
     port = port or default_port
-    return ip, int(port)
+    return ip, cast(port)
 
 def parse_args():
     import argparse
@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('ncid_server')
     parser.add_argument('mqtt_server')
     parser.add_argument('mqtt_topic')
+    parser.add_argument('--mqtt_auth', type=str, default=None)
     return parser.parse_args()
 
 def incoming_call(client, topic, _date, _time, _line, _nmbr, _mesg, _name):
@@ -53,12 +54,15 @@ actions = [
      , incoming_call),
 ]
 
-def main(ncid_server, mqtt_server, mqtt_topic):
-    ncid_host, ncid_port = parse_server(ncid_server, 3333)
-    mqtt_host, mqtt_port = parse_server(mqtt_server, 1883)
+def main(ncid_server, mqtt_server, mqtt_topic, mqtt_auth):
+    ncid_host, ncid_port = parse_optional(ncid_server, 3333, int)
+    mqtt_host, mqtt_port = parse_optional(mqtt_server, 1883, int)
 
     while True:
         client = mqtt.Client()
+        if mqtt_auth:
+            mqtt_username, mqtt_password = parse_optional(mqtt_auth, None)
+            client.username_pw_set(mqtt_username, mqtt_password)
         client.connect(mqtt_host,
                        mqtt_port,
                        60)
@@ -82,4 +86,4 @@ def main(ncid_server, mqtt_server, mqtt_topic):
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.ncid_server, args.mqtt_server, args.mqtt_topic)
+    main(args.ncid_server, args.mqtt_server, args.mqtt_topic, args.mqtt_auth)
