@@ -39,7 +39,15 @@ def incoming_call(client, topic, incoming_string):
     else:
         print("delta too large")
 
+def info(client, topic, info_string):
+    print("info", info_string)
+    data_array = info_string.split("*")
+    data = dict(zip(data_array[::2],data_array[1::2]))
+    client.publish(topic, json.dumps(data))
+    print("published")
+
 incoming_regex = re.compile(r'^[PC]ID: \*(.*)\*$')
+info_regex = re.compile(r'^[PC]IDINFO: \*(.*)\*$')
 def main(ncid_server, mqtt_server, mqtt_topic, mqtt_auth):
     ncid_host, ncid_port = parse_optional(ncid_server, 3333, int)
     mqtt_host, mqtt_port = parse_optional(mqtt_server, 1883, int)
@@ -62,6 +70,8 @@ def main(ncid_server, mqtt_server, mqtt_topic, mqtt_auth):
                 print(data)
                 if (match := incoming_regex.match(data)):
                   incoming_call(client, mqtt_topic, match.group(1))
+                if (match := info_regex.match(data)):
+                  info(client, mqtt_topic, match.group(1))
         except Exception as E:
             raise E
         finally:
