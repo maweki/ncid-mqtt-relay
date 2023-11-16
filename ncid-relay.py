@@ -14,7 +14,7 @@ def parse_optional(ip_string, default_port, cast=(lambda x: x)):
 
 def parse_args():
     import argparse
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Relay ncid data to mqtt server.')
     parser.add_argument('ncid_server')
     parser.add_argument('mqtt_server')
     parser.add_argument('mqtt_topic')
