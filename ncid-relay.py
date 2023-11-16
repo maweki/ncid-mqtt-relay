@@ -6,6 +6,7 @@ import re
 import paho.mqtt.client as mqtt
 import json
 import datetime
+#from itertools import batched # python3.12
 
 def parse_optional(ip_string, default_port, cast=(lambda x: x)):
     ip, _, port = ip_string.partition(':')
@@ -21,17 +22,13 @@ def parse_args():
     parser.add_argument('--mqtt_auth', type=str, default=None)
     return parser.parse_args()
 
-def incoming_call(client, topic, _date, _time, _line, _nmbr, _mesg, _name):
-    print("call", _date, _time, _line, _nmbr, _mesg, _name)
-    data = {"date": _date,
-            "time": _time,
-            "line": _line,
-            "nmbr": _nmbr,
-            "mesg": _mesg,
-            "name": _name,
-            }
-    d = datetime.datetime(int(_date[4:8]), int(_date[0:2]), int(_date[2:4]),
-                        int(_time[0:2]), int(_time[2:4]))
+def incoming_call(client, topic, incoming_string):
+    print("call", incoming_string)
+    data_array = incoming_string.split("*")
+    # data = dict(batched(data_array, 2)) # This only works in python3.12
+    data = dict(zip(data_array[::2],data_array[1::2]))
+    d = datetime.datetime(int(data["DATE"][4:8]), int(data["DATE"][0:2]), int(data["DATE"][2:4]),
+                        int(data["TIME"][0:2]), int(data["TIME"][2:4]))
     now = datetime.datetime.now()
     print(data)
     delta = abs(now - d)
@@ -41,19 +38,7 @@ def incoming_call(client, topic, _date, _time, _line, _nmbr, _mesg, _name):
     else:
         print("delta too large")
 
-actions = [
-    (re.compile(
-     r'^[PC]ID: '
-     r'\*DATE\*(\d{8})'
-     r'\*TIME\*(\d{4})'
-     r'\*LINE\*([^*]+)'
-     r'\*NMBR\*(\d+)'
-     r'\*MESG\*([^*]+)'
-     r'\*NAME\*([^*]+)'
-     r'\*$')
-     , incoming_call),
-]
-
+incoming_regex = re.compile(r'^[PC]ID: \*(.*)\*$')
 def main(ncid_server, mqtt_server, mqtt_topic, mqtt_auth):
     ncid_host, ncid_port = parse_optional(ncid_server, 3333, int)
     mqtt_host, mqtt_port = parse_optional(mqtt_server, 1883, int)
@@ -74,10 +59,8 @@ def main(ncid_server, mqtt_server, mqtt_topic, mqtt_auth):
             while True:
                 data = s.recv(1024).decode().strip()
                 print(data)
-                for regex, func in actions:
-                    match = regex.match(data)
-                    if match:
-                        func(client, mqtt_topic, *match.groups())
+                if (match := incoming_regex.match(data)):
+                  incoming_call(client, mqtt_topic, match.group(1))
         except Exception as E:
             raise E
         finally:
