@@ -29,6 +29,7 @@ def incoming_call(client, topic, incoming_string):
     data = dict(zip(data_array[::2],data_array[1::2]))
     d = datetime.datetime(int(data["DATE"][4:8]), int(data["DATE"][0:2]), int(data["DATE"][2:4]),
                         int(data["TIME"][0:2]), int(data["TIME"][2:4]))
+    data['datetime'] = d
     now = datetime.datetime.now()
     print(data)
     delta = abs(now - d)
